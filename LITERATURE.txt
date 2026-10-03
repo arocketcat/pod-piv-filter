@@ -1,0 +1,125 @@
+Prior work: POD background removal and automatic rank selection
+===============================================================
+
+Literature check done September 24, 2026, with a direct comparison of rank rules on this package's
+dataset. Items marked (not read) were found by title and listing only; their pages could not be
+fetched, so nothing here depends on their content.
+
+What already exists
+-------------------
+
+POD background removal for PIV. Mendez et al. (2017) introduced it and it is the reference method.
+Their paper already includes an automatic rank rule: the smallest r such that, for every later mode,
+consecutive singular values differ by less than 1% of the plateau level and the temporal mode is
+orthogonal to the mean (tolerance 0.01). They also state the method works on non time resolved
+sequences and that frames with different illumination should be filtered separately. Masullo's
+project page (https://www.alessandromasullo.com/POD-based-Background-Removal/), journal
+page (https://www.sciencedirect.com/science/article/abs/pii/S0894177716302266), MATLAB
+code (https://www.mathworks.com/matlabcentral/fileexchange/59655-pod-based-background-removal-for-particle-image-velocimetry).
+
+Robust PCA for PIV backgrounds. Baghaie (arXiv 2019) splits the image sequence into low rank
+background and sparse particles, with the standard lambda = 1/sqrt(pixels), and compares against min
+subtraction and Mendez's POD. Evaluation uses image quality metrics (MSE, PSNR, SSIM), not velocity
+error against a known flow. arXiv 1908.06047 (https://arxiv.org/abs/1908.06047)
+
+Other PIV background and reflection methods
+
+-   Temporal high pass filter for time resolved data, Sciacchitano & Scarano (2014) (not read)
+    IOP (https://iopscience.iop.org/article/10.1088/0957-0233/25/8/084009)
+-   Anisotropic diffusion for unsteady reflections, Adatrao & Sciacchitano (2019) (not read)
+    IOP (https://iopscience.iop.org/article/10.1088/1361-6501/aafca9)
+-   Background extraction from double frame images, Honkanen & Nobach (2005) (not read)
+    Springer (https://link.springer.com/article/10.1007/s00348-004-0916-x)
+-   Radon transform to detect a line of particles at a free surface and build a dynamic mask,
+    Sanchis & Jensen (2011). Relevant precedent for detecting thin line features in PIV images.
+    Springer (https://link.springer.com/article/10.1007/s00348-011-1101-7)
+-   Treatment of light reflections in 3D PIV systems (Meas. Sci. Technol., recent) (not read)
+    IOP (https://iopscience.iop.org/article/10.1088/1361-6501/ae1993)
+
+Random matrix rank selection, the part closest to this package's rule
+
+-   Epps & Krivitzky (2019), Exp. Fluids: fit a Marchenko-Pastur law to the tail of the singular
+    values of noisy PIV velocity fields, estimating both the noise level and a spatial correlation
+    parameter, then pick the rank from it. This is essentially the same idea as pod_filter.py's rule
+    (Marchenko-Pastur fit with a fitted effective aspect ratio to absorb pixel correlation), applied
+    to vector fields instead of raw images.
+    Springer (https://link.springer.com/article/10.1007/s00348-019-2768-4)
+-   Epps & Techet (2010), error threshold criterion for SVD modes of PIV data (not read)
+    Springer (https://link.springer.com/article/10.1007/s00348-009-0740-4)
+-   Gavish & Donoho (2014): optimal hard threshold, iid noise. arXiv
+    1305.5870 (https://arxiv.org/abs/1305.5870)
+-   Donoho, Gavish & Romanov (2023), ScreeNOT: MSE optimal threshold when the noise is correlated
+    and its structure unknown; Python and R packages. arXiv
+    2009.12297 (https://arxiv.org/abs/2009.12297)
+-   Veraart et al. (2016), MP-PCA: Marchenko-Pastur based automatic rank for denoising diffusion
+    MRI. GitHub (https://github.com/Neurophysics-CFIN/MP-PCA-Denoising)
+-   Baranger et al. (2018): adaptive SVD clutter filtering for ultrafast Doppler, a structurally
+    identical problem (low rank tissue clutter over noise like blood signal), with the cutoff chosen
+    from the similarity of spatial singular vectors.
+    PubMed (https://pubmed.ncbi.nlm.nih.gov/29969408/)
+
+Head to head on this dataset
+----------------------------
+
+Modes removed by each rule (frame A unless noted). mendez is my implementation of the criterion as
+described; normalising the ones vector to unit length and taking the plateau level as the median
+singular value are my choices.
+
+  Ensemble             This package (MP fit)   Gavish-Donoho   ScreeNOT            Mendez criterion
+  -------------------- ----------------------- --------------- ------------------- ------------------
+  Clean, 1000 images   1                       1               1                   1
+  Corrupted, 1000      10                      9               8 (7 for frame B)   10
+  Corrupted, 400       9                       6               6                   61
+  Corrupted, 200       7                       5               5                   198
+  Corrupted, 100       6                       5               5                   88
+  Corrupted, 50        5                       4               4                   49
+
+Below 1000 images the orthogonality half of the Mendez criterion, as I implemented it, fails on
+scattered bulk modes and the rule runs away; its singular value gap half alone gives 9 to 10. That
+may be my reading of their normalisation, so it is not evidence against their method.
+
+PIV error (this package's processor) against the number of removed modes, with POD fitted on N
+images per cavity:
+
+  N      Fails (RMS > 0.15 px) at   Best                 Flat within 0.01 px of best   Rules pick
+  ------ -------------------------- -------------------- ----------------------------- ------------
+  1000   0 to 2                     5 to 17 (0.087 px)   3 to 80                       8 to 10
+  200    0 to 2                     5 to 6 (0.089 px)    4 to 15                       5 to 7
+  100    0 to 2                     4 (0.095 px)         4 to 10                       5 to 6
+  50     0 to 3, and 20 or more     4 to 5 (0.103 px)    4 to 7                        4 to 5
+
+Scored on 100 pairs for N = 1000 and 50 to 60 pairs otherwise; ranks tested were 0, 2 to 10, 12, 15,
+20, 25 (plus 1, 11, 14, 17, 30, 50, 80 for N = 1000).
+
+Every rule except the runaway case lands in the flat region at every ensemble size. At 1000 images
+removing extra modes costs almost nothing, but at 50 images each mode carries 2% of the particle
+signal and removing 25 modes doubles the error, so "when unsure, remove more" only holds for large
+ensembles.
+
+What this means for novelty
+---------------------------
+
+Not new
+
+-   POD background removal (Mendez et al. 2017) and robust PCA for it (Baghaie 2019).
+-   An automatic rank rule for it (Mendez et al. 2017).
+-   Fitting a Marchenko-Pastur law with a correlation correction to pick the rank (Epps & Krivitzky
+    2019 for PIV vector fields; Veraart et al. 2016 for MRI), and correlated noise thresholds in
+    general (ScreeNOT).
+-   This package's rule showed no measured advantage: Gavish-Donoho and ScreeNOT pick slightly fewer
+    modes and give the same or marginally lower error.
+
+Possibly less covered (I found nothing on these, which is not proof there is nothing)
+
+-   Scoring background removal by velocity error against an exact flow, including the tail of large
+    errors. The RPCA paper used image metrics only. I could not read how Mendez et al. scored their
+    tests, so check before claiming.
+-   Processor dependence: the same corrupted images gave 2.0 px RMS with this package's processor,
+    0.30 px with OpenPIV and 0.27 px with PIVlab, while POD brought all three back to within 2 to
+    12% of their own clean result. How much artifacts hurt depends strongly on the processor; how
+    well the filter works does not.
+-   Non repeating thin artifacts present in both frames, where POD only partly works, combined with
+    shape based detection.
+
+Taken together, a paper would be an evaluation study (ground truth, several processors, ensemble
+size, artifact types, then real data), not a new filter.

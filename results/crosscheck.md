@@ -1,0 +1,43 @@
+# Cross check with independent PIV processors
+
+All three processors read the same 16 bit TIFFs (1000 pairs). POD filtering was done once, with `pod_filter.py` on the TIFFs (10 modes per cavity), before any processor saw the images. Same pass schedule everywhere: 64 px (step 32), then three 32 px passes (step 16).
+
+
+## All vectors: RMS error (px), and share of vectors off by more than 1 px
+
+| Condition | This package | OpenPIV 0.26.1 | PIVlab 3.09 (Octave) |
+|---|---|---|---|
+| Clean images | 0.080 (0.02%) | 0.087 (0.00%) | 0.162 (0.03%) |
+| Corrupted, unfiltered | 2.000 (1.91%) | 0.297 (1.15%) | 0.270 (0.50%) |
+| Corrupted, PIVlab high-pass filter |  |  | 0.213 (0.19%) |
+| Corrupted, ensemble min subtraction | 1.389 (0.88%) | 0.222 (0.53%) | 0.204 (0.20%) |
+| Corrupted, POD filtered TIFFs | 0.088 (0.02%) | 0.097 (0.00%) | 0.165 (0.03%) |
+
+## Windows on the fixed streaks: RMS error (px), and share of vectors off by more than 1 px
+
+| Condition | This package | OpenPIV 0.26.1 | PIVlab 3.09 (Octave) |
+|---|---|---|---|
+| Clean images | 0.076 (0.00%) | 0.085 (0.00%) | 0.168 (0.01%) |
+| Corrupted, unfiltered | 2.733 (3.45%) | 0.425 (2.42%) | 0.377 (1.09%) |
+| Corrupted, PIVlab high-pass filter |  |  | 0.277 (0.40%) |
+| Corrupted, ensemble min subtraction | 1.929 (1.51%) | 0.303 (1.06%) | 0.251 (0.35%) |
+| Corrupted, POD filtered TIFFs | 0.085 (0.00%) | 0.095 (0.00%) | 0.171 (0.01%) |
+
+## Hotspot windows while flashing: RMS error (px), and share of vectors off by more than 1 px
+
+| Condition | This package | OpenPIV 0.26.1 | PIVlab 3.09 (Octave) |
+|---|---|---|---|
+| Clean images | 0.069 (0.00%) | 0.071 (0.00%) | 0.181 (0.00%) |
+| Corrupted, unfiltered | 3.003 (5.28%) | 0.466 (3.26%) | 0.339 (1.10%) |
+| Corrupted, PIVlab high-pass filter |  |  | 0.246 (0.25%) |
+| Corrupted, ensemble min subtraction | 1.926 (2.92%) | 0.382 (2.03%) | 0.258 (0.50%) |
+| Corrupted, POD filtered TIFFs | 0.080 (0.00%) | 0.081 (0.00%) | 0.186 (0.01%) |
+
+## Artifact induced RMS (px): |d_condition - d_clean| from the same processor
+
+| Condition | This package | OpenPIV 0.26.1 | PIVlab 3.09 (Octave) |
+|---|---|---|---|
+| Corrupted, unfiltered | 1.999 | 0.286 | 0.242 |
+| Corrupted, PIVlab high-pass filter |  |  | 0.175 |
+| Corrupted, ensemble min subtraction | 1.388 | 0.205 | 0.159 |
+| Corrupted, POD filtered TIFFs | 0.051 | 0.035 | 0.085 |

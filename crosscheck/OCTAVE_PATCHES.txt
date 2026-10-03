@@ -1,0 +1,2 @@
+PIVlab 3.09 (git tag 3.09). Patch for Octave 8.4: PIVlab_postproc.m std(...,'omitnan') -> std of non-NaN entries (identical math).
+smoothn.m: exist('+misc/dctn') -> exist('+misc/dctn.m') (Octave's exist needs the extension; no effect on results).
