@@ -4,6 +4,16 @@ Synthetic PIV dataset with exact ground truth, a PIV processor, a POD based
 artifact filter, and a benchmark that measures how much the streaks and flashes
 hurt the velocity field and how much of that the filter recovers.
 
+![Particle images: clean, corrupted, min subtraction, POD filtered](results/fig1_images.png)
+*The same frame clean, corrupted with streaks and hotspot flashes, after ensemble
+min subtraction, and after the POD filter. Min subtraction leaves the intermittent
+flashes in place; POD removes them.*
+
+![Displacement fields and errors for one pair](results/fig6_vector_fields.png)
+*Effect on the velocity field (pair 696). Unfiltered, whole blocks of windows lock
+onto the stationary artifacts (1.29 px RMS); after POD filtering the error is back
+at the clean level (0.074 vs 0.071 px).*
+
 ## Files
 
 | File | What it does |
@@ -71,6 +81,11 @@ mode (the mean image); on the corrupted data it selects 10 for both cavities.
 The fit uses the snapshot Gram matrix accumulated in float64 by pixel chunks,
 about 2 s per 1000 images here.
 
+![POD spectrum and removed modes](results/fig2_pod_spectrum_modes.png)
+*Left: singular value spectrum. The artifact modes stand above the flat particle
+bulk; on clean data only the mean image does. Right: the leading removed modes,
+each capturing the glow, streaks, hotspots or streak jitter.*
+
 The rule is not new in substance: Epps & Krivitzky (2019) fit a
 Marchenko-Pastur law with a correlation correction to PIV velocity fields, and
 Mendez et al. (2017) already gave an automatic rank for this filter. On this
@@ -97,6 +112,15 @@ Where the artifacts sit:
 Full tables, including the artifact induced error |d_condition − d_clean|, are
 in `results/summary.md` and `results/metrics.json`.
 
+![RMS error maps for the four conditions](results/fig3_error_maps.png)
+*RMS error over all 1000 pairs at each vector location. The artifact footprint is
+plain in the unfiltered and min subtraction maps and gone after POD filtering.*
+
+![Per pair error and error tail distribution](results/fig4_error_distribution.png)
+*Left: RMS error of every pair, with ticks marking which artifacts it contains.
+Right: fraction of vectors exceeding a given error. The POD filtered tail lies on
+top of the clean one.*
+
 The unfiltered and min subtraction numbers above are specific to this
 package's processor. It has no guard against runaway vectors, so when it fails
 it fails badly (9 px average error among bad vectors, worst 67 px). OpenPIV and
@@ -119,6 +143,10 @@ below. The POD filtered result holds for all three.
 * Where there is nothing to remove, POD costs essentially nothing: the
   artifact induced error is 0.051 px versus 0.053 px for min subtraction, which
   is the floor set by independent noise realizations of the two copies.
+
+![Sensitivity to the number of removed modes](results/fig5_mode_sweep.png)
+*Error versus the number of removed modes (100 pairs). Flat from about 4 to 17
+modes; the automatic choice of 10 sits in the middle.*
 
 **Mode count sensitivity (fig 5, 100 pairs).** Error is flat from 4 to about
 17 removed modes; the automatic choice of 10 sits in the middle. Removing 30,
